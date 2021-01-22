@@ -4,7 +4,33 @@
   },
   "interactions": [
     {
+      "description": "post for any data",
+      "request": {
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
       "description": "post for data",
+      "request": {
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
+      "description": "post for default data",
       "request": {
         "body": {
           "installation": "2bad93b0-9e3f-4a1c-ae46-d36d71c60f3c",

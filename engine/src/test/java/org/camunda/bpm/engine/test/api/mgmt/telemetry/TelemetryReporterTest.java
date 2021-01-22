@@ -145,6 +145,7 @@ public class TelemetryReporterTest {
 
   protected ProcessEngine standaloneProcessEngine;
   protected ProcessEngineConfigurationImpl configuration;
+  protected ProcessEngineConfigurationImpl customConfiguration;
   protected ManagementService managementService;
   protected RuntimeService runtimeService;
   protected TaskService taskService;
@@ -207,6 +208,7 @@ public class TelemetryReporterTest {
 
     configuration.setTelemetryData(defaultTelemetryData);
 
+    customConfiguration = null;
   }
 
   protected void clearMetrics() {
@@ -221,9 +223,8 @@ public class TelemetryReporterTest {
   public RequestResponsePact sendDefaultData(PactDslWithProvider builder) {
     Data data = createDataToSend();
     String requestBody = new Gson().newBuilder().serializeNulls().create().toJson(data);
-    System.err.println("creating request: "+requestBody);
     return builder
-            .uponReceiving("post for data")
+            .uponReceiving("post for default data")
             .path(TELEMETRY_ENDPOINT_PATH)
             .method("POST")
             .headers("Content-Type",  "application/json")
@@ -253,10 +254,23 @@ public class TelemetryReporterTest {
     // when
     standaloneReporter.reportNow();
 
-    // then: PactProviderRule verifies the interactions
+    // then: PactProviderRule verifies the interaction
+  }
+
+  @Pact(provider="et", consumer="camunda-bpm-runtime")
+  public RequestResponsePact sendAnyData(PactDslWithProvider builder) {
+    return builder
+            .uponReceiving("post for any data")
+            .path(TELEMETRY_ENDPOINT_PATH)
+            .method("POST")
+            .headers("Content-Type",  "application/json")
+            .willRespondWith()
+            .status(HttpURLConnection.HTTP_ACCEPTED)
+            .toPact();
   }
 
   @Test
+  @PactVerification(value="et", fragment="sendAnyData")
   public void shouldReportDataWhenTelemetryInitialized() {
     // given
     ProcessEngineConfigurationImpl processEngineConfiguration = new StandaloneInMemProcessEngineConfiguration();
@@ -264,17 +278,13 @@ public class TelemetryReporterTest {
         .setTelemetryEndpoint(TELEMETRY_ENDPOINT)
         .setInitializeTelemetry(true)
         .setJdbcUrl("jdbc:h2:mem:camunda" + getClass().getSimpleName());
-    stubFor(post(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-            .willReturn(aResponse()
-                        .withStatus(HttpURLConnection.HTTP_ACCEPTED)));
+
     standaloneProcessEngine = processEngineConfiguration.buildProcessEngine();
 
     // when
     processEngineConfiguration.getTelemetryReporter().reportNow();
 
-    // then
-    verify(postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-              .withHeader("Content-Type",  equalTo("application/json")));
+    // then: PactProviderRule verified the interaction
   }
 
   @Test
@@ -304,40 +314,43 @@ public class TelemetryReporterTest {
   }
 
   @Test
-  public void shouldNotReportInitialDataWhenReporterActivatedAndInitTelemetryEnabledDuringProcessEngineClose() {
+  @PactVerification(value="et", fragment="sendAnyData")
+  public void shouldReportInitialDataWhenReporterActivatedAndInitTelemetryEnabledDuringProcessEngineClose() {
     // given
     createEngineWithInitMessage(true);
-
-    stubFor(post(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-        .willReturn(aResponse()
-            .withStatus(HttpURLConnection.HTTP_ACCEPTED)));
 
     // when
     standaloneProcessEngine.close();
     standaloneProcessEngine = null;
 
-    // then
-    verify(1, postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-        .withHeader("Content-Type",  equalTo("application/json")));  }
+    // then: PactProviderRule verifies the interaction
+  }
+
+  @Pact(provider="et", consumer="camunda-bpm-runtime")
+  public RequestResponsePact sendInitMessageWithNullTelemetryEnabled(PactDslWithProvider builder) {
+    customConfiguration = createEngineWithInitMessage(null);
+    Data expectedData = createInitialDataToSend(customConfiguration.getTelemetryData(), null);
+    String requestBody = new Gson().toJson(expectedData);
+    return builder
+            .uponReceiving("init message with telemetry-enabled: null")
+            .path(TELEMETRY_ENDPOINT_PATH)
+            .method("POST")
+            .headers("Content-Type",  "application/json")
+            .body(requestBody)
+            .willRespondWith()
+            .status(HttpURLConnection.HTTP_ACCEPTED)
+            .toPact();
+  }
 
   @Test
+  @PactVerification(value="et", fragment = "sendInitMessageWithNullTelemetryEnabled")
   public void shouldReportInitialDataWhenReporterActivatedAndInitTelemetryUndefined() {
-    // given
-    ProcessEngineConfigurationImpl processEngineConfiguration = createEngineWithInitMessage(null);
-    stubFor(post(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-            .willReturn(aResponse()
-                        .withStatus(HttpURLConnection.HTTP_ACCEPTED)));
-
-    Data expectedData = createInitialDataToSend(processEngineConfiguration.getTelemetryData(), null);
-    String requestBody = new Gson().toJson(expectedData);
+    // given: customConfiguration with telemetry-enabled=null from fragment method
 
     // when
-    processEngineConfiguration.getTelemetryReporter().reportNow();
+    customConfiguration.getTelemetryReporter().reportNow();
 
-    // then
-    verify(postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-              .withRequestBody(equalToJson(requestBody, JSONCompareMode.LENIENT))
-              .withHeader("Content-Type",  equalTo("application/json")));
+    // then: PactProviderRule verifies interaction
   }
 
 
