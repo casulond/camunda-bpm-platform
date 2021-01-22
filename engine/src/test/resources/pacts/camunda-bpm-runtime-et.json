@@ -1,0 +1,89 @@
+{
+  "consumer": {
+    "name": "camunda-bpm-runtime"
+  },
+  "interactions": [
+    {
+      "description": "post for data",
+      "request": {
+        "body": {
+          "installation": "2bad93b0-9e3f-4a1c-ae46-d36d71c60f3c",
+          "product": {
+            "edition": "special",
+            "internals": {
+              "application-server": {
+                "vendor": "Apache Tomcat",
+                "version": "Apache Tomcat/10.0.1"
+              },
+              "camunda-integration": [
+
+              ],
+              "commands": {
+                "IsTelemetryEnabledCmd": {
+                  "count": 1
+                },
+                "TelemetryConfigureCmd": {
+                  "count": 1
+                },
+                "TelemetrySendingTask$$Lambda$172": {
+                  "count": 1
+                }
+              },
+              "database": {
+                "vendor": "mySpecialDb",
+                "version": "v.1.2.3"
+              },
+              "jdk": {
+                "vendor": "Ubuntu",
+                "version": "11.0.9.1"
+              },
+              "license-key": null,
+              "metrics": {
+                "activity-instance-start": {
+                  "count": 0
+                },
+                "executed-decision-elements": {
+                  "count": 0
+                },
+                "executed-decision-instances": {
+                  "count": 0
+                },
+                "root-process-instance-start": {
+                  "count": 0
+                },
+                "unique-task-workers": {
+                  "count": 0
+                }
+              },
+              "telemetry-enabled": true,
+              "webapps": [
+
+              ]
+            },
+            "name": "Runtime",
+            "version": "7.14.0"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.2.0-beta.2"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "et"
+  }
+}

@@ -36,6 +36,10 @@ public abstract class ClassNameUtil {
     if (unqualifiedClassName==null) {
       String fullyQualifiedClassName = clazz.getName();
       unqualifiedClassName = fullyQualifiedClassName.substring(fullyQualifiedClassName.lastIndexOf('.')+1);
+      int lambdaIndex = unqualifiedClassName.indexOf("/"); // e.g. in TelemetrySendingTask$$Lambda$172/0x00000008404f6c40
+      if(lambdaIndex != -1) {
+        unqualifiedClassName = unqualifiedClassName.substring(0, lambdaIndex);
+      }
       cachedNames.put(clazz, unqualifiedClassName);
     }
     return unqualifiedClassName;

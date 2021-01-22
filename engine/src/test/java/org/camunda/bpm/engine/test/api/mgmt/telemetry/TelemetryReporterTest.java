@@ -16,32 +16,16 @@
  */
 package org.camunda.bpm.engine.test.api.mgmt.telemetry;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.engine.impl.telemetry.TelemetryRegistry.UNIQUE_TASK_WORKERS;
-import static org.camunda.bpm.engine.management.Metrics.ACTIVTY_INSTANCE_START;
-import static org.camunda.bpm.engine.management.Metrics.EXECUTED_DECISION_ELEMENTS;
-import static org.camunda.bpm.engine.management.Metrics.EXECUTED_DECISION_INSTANCES;
-import static org.camunda.bpm.engine.management.Metrics.ROOT_PROCESS_INSTANCE_START;
-
-import java.net.HttpURLConnection;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import au.com.dius.pact.consumer.MockServer;
+import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
+import au.com.dius.pact.consumer.junit.PactProviderRule;
+import au.com.dius.pact.consumer.junit.PactVerification;
+import au.com.dius.pact.core.model.RequestResponsePact;
+import au.com.dius.pact.core.model.annotations.Pact;
+import au.com.dius.pact.core.model.annotations.PactFolder;
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.google.gson.Gson;
 import org.camunda.bpm.dmn.engine.impl.DefaultDmnEngineConfiguration;
 import org.camunda.bpm.engine.EntityTypes;
 import org.camunda.bpm.engine.IdentityService;
@@ -91,14 +75,36 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.http.Fault;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import com.google.gson.Gson;
+import java.net.HttpURLConnection;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.engine.impl.telemetry.TelemetryRegistry.UNIQUE_TASK_WORKERS;
+import static org.camunda.bpm.engine.management.Metrics.ACTIVTY_INSTANCE_START;
+import static org.camunda.bpm.engine.management.Metrics.EXECUTED_DECISION_ELEMENTS;
+import static org.camunda.bpm.engine.management.Metrics.EXECUTED_DECISION_INSTANCES;
+import static org.camunda.bpm.engine.management.Metrics.ROOT_PROCESS_INSTANCE_START;
 
 /**
  * Uses Wiremock so should be run as part of {@link TelemetrySuiteTest}.
  */
+@PactFolder("src/test/resources/pacts/")
 public class TelemetryReporterTest {
 
   protected static final String TELEMETRY_ENDPOINT = "http://localhost:8084/pings";
@@ -132,7 +138,10 @@ public class TelemetryReporterTest {
   public ProcessEngineLoggingRule loggingRule = new ProcessEngineLoggingRule();
 
   @ClassRule
-  public static WireMockRule wireMockRule = new WireMockRule(8084);
+  public static WireMockRule wireMockRule = null; //new WireMockRule(8084);
+
+  @Rule
+  public PactProviderRule mockProvider = new PactProviderRule("et", "localhost", 8084, this);
 
   protected ProcessEngine standaloneProcessEngine;
   protected ProcessEngineConfigurationImpl configuration;
@@ -194,7 +203,7 @@ public class TelemetryReporterTest {
         .enableFeelLegacyBehavior(false)
         .init();
 
-    WireMock.resetAllRequests();
+    // WireMock.resetAllRequests();
 
     configuration.setTelemetryData(defaultTelemetryData);
 
@@ -208,15 +217,28 @@ public class TelemetryReporterTest {
     managementService.deleteMetrics(null);
   }
 
+  @Pact(provider="et", consumer="camunda-bpm-runtime")
+  public RequestResponsePact sendDefaultData(PactDslWithProvider builder) {
+    Data data = createDataToSend();
+    String requestBody = new Gson().newBuilder().serializeNulls().create().toJson(data);
+    System.err.println("creating request: "+requestBody);
+    return builder
+            .uponReceiving("post for data")
+            .path(TELEMETRY_ENDPOINT_PATH)
+            .method("POST")
+            .headers("Content-Type",  "application/json")
+            .body(requestBody)
+            .willRespondWith()
+            .status(HttpURLConnection.HTTP_ACCEPTED)
+            .toPact();
+  }
+
   @Test
+  @PactVerification(value = "et", fragment = "sendDefaultData")
   public void shouldSendTelemetry() {
     // given
     managementService.toggleTelemetry(true);
     Data data = createDataToSend();
-    String requestBody = new Gson().toJson(data);
-    stubFor(post(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-            .willReturn(aResponse()
-                        .withStatus(HttpURLConnection.HTTP_ACCEPTED)));
 
     standaloneReporter = new TelemetryReporter(configuration.getCommandExecutorTxRequired(),
                                                                 TELEMETRY_ENDPOINT,
@@ -231,10 +253,7 @@ public class TelemetryReporterTest {
     // when
     standaloneReporter.reportNow();
 
-    // then
-    verify(postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-              .withRequestBody(equalToJson(requestBody, JSONCompareMode.LENIENT))
-              .withHeader("Content-Type",  equalTo("application/json")));
+    // then: PactProviderRule verifies the interactions
   }
 
   @Test
@@ -1173,6 +1192,8 @@ public class TelemetryReporterTest {
     Jdk jdk = ParseUtil.parseJdkDetails();
     Internals internals = new Internals(database, new ApplicationServer("Apache Tomcat/10.0.1"), null, jdk);
     internals.setTelemetryEnabled(true);
+    internals.setLicenseKey(null);
+    internals.setWebapps(new HashSet<>());
 
     Map<String, Command> commands = getDefaultCommandCounts();
     internals.setCommands(commands);
@@ -1181,7 +1202,7 @@ public class TelemetryReporterTest {
     internals.setMetrics(metrics);
 
     Product product = new Product("Runtime", "7.14.0", "special", internals);
-    Data data = new Data("f5b19e2e-b49a-11ea-b3de-0242ac130004", product);
+    Data data = new Data("2bad93b0-9e3f-4a1c-ae46-d36d71c60f3c", product);
     return data;
   }
 
@@ -1260,6 +1281,7 @@ public class TelemetryReporterTest {
     Map<String, Command> commands = new HashMap<>();
     commands.put("TelemetryConfigureCmd", new Command(1));
     commands.put("IsTelemetryEnabledCmd", new Command(1));
+    commands.put("TelemetrySendingTask$$Lambda$172", new Command(1));
     return commands;
   }
 
