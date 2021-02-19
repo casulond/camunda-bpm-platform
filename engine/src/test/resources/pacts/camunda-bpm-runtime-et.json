@@ -4,6 +4,150 @@
   },
   "interactions": [
     {
+      "description": "init message with telemetry-enabled: null",
+      "request": {
+        "body": {
+          "installation": "5c73637d-2f18-4900-9d3f-83cf474b38da",
+          "product": {
+            "edition": "community",
+            "internals": {
+              "application-server": null,
+              "camunda-integration": [
+
+              ],
+              "commands": {
+
+              },
+              "database": null,
+              "jdk": null,
+              "license-key": null,
+              "metrics": null,
+              "telemetry-enabled": null,
+              "webapps": null
+            },
+            "name": "Camunda BPM Runtime",
+            "version": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
+      "description": "initial message with telemetry-enabled: false",
+      "request": {
+        "body": {
+          "installation": "39751b05-6656-4221-9783-f31804be663b",
+          "product": {
+            "edition": "community",
+            "internals": {
+              "application-server": null,
+              "camunda-integration": [
+
+              ],
+              "commands": {
+
+              },
+              "database": null,
+              "jdk": null,
+              "license-key": null,
+              "metrics": null,
+              "telemetry-enabled": false,
+              "webapps": null
+            },
+            "name": "Camunda BPM Runtime",
+            "version": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
+      "description": "initial message with telemetry-enabled: null",
+      "request": {
+        "body": {
+          "installation": "8543bdf5-de7b-419d-a4a5-8a48c739e70c",
+          "product": {
+            "edition": "community",
+            "internals": {
+              "application-server": null,
+              "camunda-integration": [
+
+              ],
+              "commands": {
+
+              },
+              "database": null,
+              "jdk": null,
+              "license-key": null,
+              "metrics": null,
+              "telemetry-enabled": null,
+              "webapps": null
+            },
+            "name": "Camunda BPM Runtime",
+            "version": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
+      "description": "initial message with telemetry-enabled: true",
+      "request": {
+        "body": {
+          "installation": "45f1408e-b575-4383-9cf7-209726fb4158",
+          "product": {
+            "edition": "community",
+            "internals": {
+              "application-server": null,
+              "camunda-integration": [
+
+              ],
+              "commands": {
+
+              },
+              "database": null,
+              "jdk": null,
+              "license-key": null,
+              "metrics": null,
+              "telemetry-enabled": true,
+              "webapps": null
+            },
+            "name": "Camunda BPM Runtime",
+            "version": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
       "description": "post for any data",
       "request": {
         "headers": {
@@ -61,7 +205,7 @@
               },
               "jdk": {
                 "vendor": "Ubuntu",
-                "version": "11.0.9.1"
+                "version": "11.0.10"
               },
               "license-key": null,
               "metrics": {
@@ -92,6 +236,109 @@
         },
         "headers": {
           "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/pings"
+      },
+      "response": {
+        "status": 202
+      }
+    },
+    {
+      "description": "second message with telemetry-enabled: true",
+      "request": {
+        "body": {
+          "installation": "c1b295d0-5da5-4867-a8f1-d846451d8d7c",
+          "product": {
+            "edition": "community",
+            "internals": {
+              "application-server": null,
+              "camunda-integration": [
+
+              ],
+              "commands": {
+                "BootstrapEngineCommand": {
+                  "count": 1
+                },
+                "GetLicenseKeyCmd": {
+                  "count": 1
+                },
+                "IsTelemetryEnabledCmd": {
+                  "count": 2
+                },
+                "TelemetrySendingTask$$Lambda$173": {
+                  "count": 1
+                },
+                "TelemetrySendingTask$$Lambda$193": {
+                  "count": 1
+                }
+              },
+              "database": {
+                "vendor": "H2",
+                "version": "1.4.190 (2015-10-11)"
+              },
+              "jdk": {
+                "vendor": "Ubuntu",
+                "version": "11.0.10"
+              },
+              "license-key": null,
+              "metrics": {
+                "activity-instance-start": {
+                  "count": 0
+                },
+                "executed-decision-elements": {
+                  "count": 0
+                },
+                "executed-decision-instances": {
+                  "count": 0
+                },
+                "root-process-instance-start": {
+                  "count": 0
+                },
+                "unique-task-workers": {
+                  "count": 0
+                }
+              },
+              "telemetry-enabled": true,
+              "webapps": [
+
+              ]
+            },
+            "name": "Camunda BPM Runtime",
+            "version": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.installation": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+                }
+              ]
+            },
+            "$.product.internals.jdk.vendor": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.product.internals.jdk.version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
         },
         "method": "POST",
         "path": "/pings"
