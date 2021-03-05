@@ -25,7 +25,7 @@ import au.com.dius.pact.consumer.junit.PactProviderRule;
 import au.com.dius.pact.consumer.junit.PactVerification;
 import au.com.dius.pact.core.model.RequestResponsePact;
 import au.com.dius.pact.core.model.annotations.Pact;
-import au.com.dius.pact.core.model.annotations.PactFolder;
+import au.com.dius.pact.core.model.annotations.PactDirectory;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.gson.Gson;
@@ -73,6 +73,7 @@ import org.camunda.commons.testing.WatchLogger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -111,7 +112,8 @@ import static org.camunda.bpm.engine.management.Metrics.ROOT_PROCESS_INSTANCE_ST
 /**
  * Uses Wiremock so should be run as part of {@link TelemetrySuiteTest}.
  */
-@PactFolder("src/test/resources/pacts/")
+//@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@PactDirectory("src/test/resources/pacts/")
 public class TelemetryReporterTest {
 
   protected static final String TELEMETRY_ENDPOINT = "http://localhost:8084/pings";
