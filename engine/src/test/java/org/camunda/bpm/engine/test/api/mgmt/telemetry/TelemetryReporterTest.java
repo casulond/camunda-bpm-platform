@@ -89,8 +89,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
+import static au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -390,64 +392,50 @@ public class TelemetryReporterTest {
     customConfiguration = createEngineWithInitMessage(true);
     Data initialData = createInitialDataToSend(customConfiguration.getTelemetryData(), true);
     String initialRequestBody = new Gson().newBuilder().serializeNulls().create().toJson(initialData);
-    final DslPart body = new PactDslJsonBody()
-            .uuid("installation", "c1b295d0-5da5-4867-a8f1-d846451d8d7c")
-            .object("product")
-              .stringValue("edition", "community")
-              .object("internals")
-                .nullValue("application-server")
-                .array("camunda-integration").closeArray().asBody()
-                .object("commands")
-                  .object("BootstrapEngineCommand")
-                    .numberValue("count", 1)
-                  .closeObject()
-                  .object("GetLicenseKeyCmd")
-                    .numberValue("count", 1)
-                  .closeObject()
-                  .object("IsTelemetryEnabledCmd")
-                    .numberValue("count", 2)
-                  .closeObject().asBody()
-                  .object("TelemetrySendingTask$$Lambda$173")
-                    .numberValue("count", 1)
-                  .closeObject().asBody()
-                  .object("TelemetrySendingTask$$Lambda$193")
-                    .numberValue("count", 1)
-                  .closeObject()
-                .closeObject()
-                .object("database")
-                  .stringValue("vendor", "H2")
-                  .stringValue("version", "1.4.190 (2015-10-11)")
-                .closeObject()
-                .object("jdk")
-                  .stringType("vendor", "Ubuntu")
-                  .stringType("version", "11.0.10")
-                .closeObject().asBody()
-                .nullValue("license-key")
-                .object("metrics")
-                  .object("activity-instance-start")
-                    .numberValue("count", 0)
-                  .closeObject()
-                  .object("executed-decision-elements")
-                    .numberValue("count", 0)
-                  .closeObject()
-                  .object("executed-decision-instances")
-                    .numberValue("count", 0)
-                  .closeObject()
-                  .object("root-process-instance-start")
-                    .numberValue("count", 0)
-                  .closeObject()
-                  .object("unique-task-workers")
-                    .numberValue("count", 0)
-                  .closeObject()
-                .closeObject().asBody()
-                .booleanValue("telemetry-enabled", true)
-                .array("webapps").closeArray().asBody()
-              .closeObject().asBody()
-              .stringValue("name", "Camunda BPM Runtime")
-              .nullValue("version")
-            .closeObject()
-          .close();
-    // TODO: Use the lambda matching API from https://docs.pact.io/implementation_guides/jvm/consumer#a-lambda-dsl-for-pact
+    final DslPart body = newJsonBody(root -> {
+            root.uuid("installation", UUID.fromString("c1b295d0-5da5-4867-a8f1-d846451d8d7c"));
+            root.object("product", product -> {
+              product.stringValue("edition", "community");
+              product.object("internals", internals -> {
+                internals.nullValue("application-server");
+                internals.array("camunda-integration", unused -> {
+                });
+                internals.object("commands", commands -> {
+                  commands.object("BootstrapEngineCommand",
+                          command -> command.numberValue("count", 1));
+                  commands.object("GetLicenseKeyCmd",
+                          command -> command.numberValue("count", 1));
+                  commands.object("IsTelemetryEnabledCmd",
+                          command -> command.numberValue("count", 2));
+                  commands.object("TelemetrySendingTask$$Lambda$192",
+                          command -> command.numberValue("count", 1));
+                  commands.object("TelemetrySendingTask$$Lambda$212",
+                          command -> command.numberValue("count", 1));
+                });
+                internals.object("database", database -> {
+                  database.stringValue("vendor", "H2");
+                  database.stringValue("version", "1.4.190 (2015-10-11)");
+                });
+                internals.object("jdk", jdk -> {
+                  jdk.stringType("vendor", "Ubuntu");
+                  jdk.stringType("version", "11.0.10");
+                });
+                internals.nullValue("license-key");
+                internals.object("metrics", metrics -> {
+                  metrics.object("activity-instance-start", metric -> metric.numberValue("count", 0));
+                  metrics.object("executed-decision-elements", metric -> metric.numberValue("count", 0));
+                  metrics.object("executed-decision-instances", metric -> metric.numberValue("count", 0));
+                  metrics.object("root-process-instance-start", metric -> metric.numberValue("count", 0));
+                  metrics.object("unique-task-workers", metric -> metric.numberValue("count", 0));
+                });
+                internals.booleanValue("telemetry-enabled", true);
+                internals.array("webapps", unused -> {
+                });
+              });
+              product.stringValue("name", "Camunda BPM Runtime");
+              product.nullValue("version");
+            });
+          }).build();
     // TODO: Or could this test be changed to assert only the initial ping?
     return builder
             .uponReceiving("initial message with telemetry-enabled: true")
