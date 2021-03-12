@@ -77,6 +77,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runners.MethodSorters;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.net.HttpURLConnection;
@@ -438,7 +439,6 @@ public class TelemetryReporterTest {
               product.nullValue("version");
             });
           }).build();
-    // TODO: Or could this test be changed to assert only the initial ping?
     return builder
             .uponReceiving("initial message with telemetry-enabled: true")
               .path(TELEMETRY_ENDPOINT_PATH)
@@ -583,7 +583,64 @@ public class TelemetryReporterTest {
     verify(0, postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH)));
   }
 
+  @Pact(provider="et", consumer="camunda-bpm-runtime")
+  public RequestResponsePact sendDataWithApplicationServerInfo(PactDslWithProvider builder) {
+    final DslPart body = newJsonBody(root -> {
+      root.uuid("installation", UUID.fromString("c1b295d0-5da5-4867-a8f1-d846451d8d7c"));
+      root.object("product", product -> {
+        product.stringValue("edition", "community");
+        product.object("internals", internals -> {
+          internals.object("application-server", applicationServer -> {
+            applicationServer.stringValue("vendor", "Tomcat");
+            applicationServer.stringValue("version", "Tomcat 10");
+          });
+          internals.array("camunda-integration", unused -> {
+          });
+          internals.object("commands", commands -> {
+            commands.object("TelemetryConfigureCmd",
+                    command -> command.numberValue("count", 1));
+            commands.object("IsTelemetryEnabledCmd",
+                    command -> command.numberValue("count", 1));
+            commands.object("TelemetrySendingTask$$Lambda$212",
+                    command -> command.numberValue("count", 2));
+          });
+          internals.object("database", database -> {
+            database.stringValue("vendor", "H2");
+            database.stringValue("version", "1.4.190 (2015-10-11)");
+          });
+          internals.object("jdk", jdk -> {
+            jdk.stringType("vendor", "Ubuntu");
+            jdk.stringType("version", "11.0.10");
+          });
+          internals.nullValue("license-key");
+          internals.object("metrics", metrics -> {
+            metrics.object("activity-instance-start", metric -> metric.numberValue("count", 0));
+            metrics.object("executed-decision-elements", metric -> metric.numberValue("count", 0));
+            metrics.object("executed-decision-instances", metric -> metric.numberValue("count", 0));
+            metrics.object("root-process-instance-start", metric -> metric.numberValue("count", 0));
+            metrics.object("unique-task-workers", metric -> metric.numberValue("count", 0));
+          });
+          internals.booleanValue("telemetry-enabled", true);
+          internals.array("webapps", unused -> {
+          });
+        });
+        product.stringValue("name", "Camunda BPM Runtime");
+        product.nullValue("version");
+      });
+    }).build();
+    return builder
+            .uponReceiving("post for default data")
+            .path(TELEMETRY_ENDPOINT_PATH)
+            .method("POST")
+            .headers("Content-Type",  "application/json")
+            .body(body)
+            .willRespondWith()
+            .status(HttpURLConnection.HTTP_ACCEPTED)
+            .toPact();
+  }
+
   @Test
+  @PactVerification(value = "et", fragment = "sendDataWithApplicationServerInfo")
   public void shouldSendTelemetryWithApplicationServerInfo() {
     // given default telemetry data (no application server)
     managementService.toggleTelemetry(true);
@@ -591,20 +648,10 @@ public class TelemetryReporterTest {
     String applicationServerVersion = "Tomcat 10";
     PlatformTelemetryRegistry.setApplicationServer(applicationServerVersion);
 
-    Data expectedData = adjustDataWithAppServerInfo(configuration.getTelemetryData(), applicationServerVersion);
-
-    String requestBody = new Gson().toJson(expectedData);
-    stubFor(post(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-        .willReturn(aResponse()
-            .withStatus(HttpURLConnection.HTTP_ACCEPTED)));
-
     // when
     configuration.getTelemetryReporter().reportNow();
 
-    // then
-    verify(postRequestedFor(urlEqualTo(TELEMETRY_ENDPOINT_PATH))
-        .withRequestBody(equalToJson(requestBody, JSONCompareMode.LENIENT))
-        .withHeader("Content-Type",  equalTo("application/json")));
+    // then: PactProviderRule verifies the interaction
   }
 
   @Test
